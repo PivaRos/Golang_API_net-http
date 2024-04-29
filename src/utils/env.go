@@ -2,7 +2,10 @@ package utils
 
 import (
 	"errors"
+	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -21,7 +24,14 @@ func InitEnv() (*env, error) {
 
 	e := env{}
 
-	EnvErr := godotenv.Load("./.env")
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Fatal("No caller information")
+	}
+	dir := filepath.Dir(filename)
+	envPath := filepath.Join(dir, "../../.env")
+
+	EnvErr := godotenv.Load(envPath)
 	if EnvErr != nil {
 		return nil, EnvErr
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"go-api/src/middleware"
-	"go-api/src/routes"
 	"go-api/src/utils"
 	"log"
 	"net/http"
@@ -21,19 +20,17 @@ func main() {
 	//create router
 	mainRouter := http.NewServeMux()
 
+	//register routing
+	loadRoutes(mainRouter)
+
 	//register middlewares
 	logger := middleware.Logging
-
-	middlewaresStack := middleware.CreateStack(logger)
-	middlewaresStack(mainRouter)
-
-	//register routing
-	routes.RegisterRoutes(mainRouter)
+	Stack := middleware.CreateStack(logger)
 
 	//create server instance
 	app := http.Server{
 		Addr:    ":" + env.PORT,
-		Handler: mainRouter,
+		Handler: Stack(mainRouter),
 	}
 
 	//start listening for traffic
