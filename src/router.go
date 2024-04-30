@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func loadRoutes(router *http.ServeMux, appData AppData) {
+func loadRoutes(router *http.ServeMux, appData *AppData) {
 	authRouter := http.NewServeMux()
 	adminRouter := http.NewServeMux()
 	router.Handle("/auth/", http.StripPrefix("/auth", authRouter))
