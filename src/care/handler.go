@@ -1,4 +1,4 @@
-package auth
+package care
 
 import (
 	"net/http"
@@ -16,7 +16,6 @@ type handler struct {
 	db *mongo.Database
 }
 
-func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 
-	w.WriteHeader(http.StatusBadRequest)
 }

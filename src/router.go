@@ -1,20 +1,22 @@
 package main
 
 import (
-	"go-api/src/admin"
 	"go-api/src/auth"
+	"go-api/src/care"
 	"go-api/src/middleware"
 	"net/http"
 )
 
-func loadRoutes(router *http.ServeMux) {
+func loadRoutes(router *http.ServeMux, appData AppData) {
+	authRouter := http.NewServeMux()
+	adminRouter := http.NewServeMux()
+	router.Handle("/auth/", http.StripPrefix("/auth", authRouter))
+	router.Handle("/admin/", http.StripPrefix("/admin", middleware.CheckAdmin(adminRouter)))
 
-	auth := &auth.Handler{}
-	router.HandleFunc("POST /auth/Login", auth.Login)
+	auth := auth.CreateHandler(appData.Database)
+	authRouter.HandleFunc("POST /auth/Login", auth.Login)
 
-	admin := &admin.Handler{}
-	subRouter := http.NewServeMux()
-	router.Handle("/admin/", http.StripPrefix("/admin", middleware.CheckAdmin(subRouter)))
-	subRouter.HandleFunc("POST /CreateCare", admin.CreateCare)
+	care := care.CreateHandler(appData.Database)
+	adminRouter.HandleFunc("POST /Care", care.Create)
 
 }
