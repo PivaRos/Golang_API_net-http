@@ -19,10 +19,45 @@ type services struct {
 	db *mongo.Database
 }
 
-func (s *services) Create(care Care) error {
+func (s *services) GetById(id string) (*Care, error) {
+	var care Care
 	CaresDb := s.db.Collection("Cares")
 
-	res, err := CaresDb.InsertOne(context.TODO(), care)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": objID}
+
+	// Find the document using the filter
+	err = CaresDb.FindOne(context.TODO(), filter).Decode(&care)
+	if err != nil {
+		return nil, err
+	}
+
+	return &care, nil
+}
+
+func (s *services) GetAll() (*[]Care, error) {
+	Cares := s.db.Collection("Cares")
+
+	cursor, err := Cares.Find(context.TODO(), bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+	var cares []Care
+	if err = cursor.All(context.TODO(), &cares); err != nil {
+		return nil, err
+	}
+	return &cares, nil
+}
+
+func (s *services) Create(care Care) error {
+	Cares := s.db.Collection("Cares")
+
+	res, err := Cares.InsertOne(context.TODO(), care)
 	if err != nil {
 		return err
 	}
@@ -34,7 +69,7 @@ func (s *services) Create(care Care) error {
 }
 
 func (s *services) Delete(id string) error {
-	CaresDb := s.db.Collection("Cares")
+	Cares := s.db.Collection("Cares")
 
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -43,7 +78,7 @@ func (s *services) Delete(id string) error {
 
 	filter := bson.M{"_id": objID}
 
-	result, err := CaresDb.DeleteOne(context.TODO(), filter)
+	result, err := Cares.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
