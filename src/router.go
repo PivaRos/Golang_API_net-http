@@ -14,7 +14,7 @@ func loadRoutes(router *http.ServeMux, appData *AppData) {
 	router.Handle("/admin/", http.StripPrefix("/admin", middleware.CheckAdmin(adminRouter)))
 
 	auth := auth.CreateHandler(appData.Database)
-	authRouter.HandleFunc("POST /auth/Login", auth.Login)
+	authRouter.HandleFunc("POST /Login", auth.Login)
 
 	care := care.CreateHandler(appData.Database)
 	adminRouter.HandleFunc("POST /Care", care.Create)
