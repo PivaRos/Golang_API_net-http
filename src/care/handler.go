@@ -2,14 +2,11 @@ package care
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type handler struct {
-	s *services
-}
 
 func CreateHandler(db *mongo.Database) *handler {
 	return &handler{
@@ -41,6 +38,22 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+type handler struct {
+	s *services
+}
+
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 
+	id := r.PathValue("id")
+	log.Println(id)
+	err := h.s.Delete(id)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "No document found with the given ID", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Failed to delete the document: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

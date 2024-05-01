@@ -18,5 +18,6 @@ func loadRoutes(router *http.ServeMux, appData *AppData) {
 
 	care := care.CreateHandler(appData.Database)
 	adminRouter.HandleFunc("POST /Care", care.Create)
+	adminRouter.HandleFunc("DELETE /Care/{id}", care.Delete)
 
 }
