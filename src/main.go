@@ -24,7 +24,10 @@ func main() {
 	//setup mongodb connection
 	client, db, context, cancel, err := utils.SetupMongoDB(env.MONGO_URI, env.Db)
 	defer utils.CloseConnection(client, context, cancel)
-
+	if err != nil {
+		log.Panicln(err)
+	}
+	log.Println("Connected to mongodb")
 	appData := &AppData{
 		MongoClient: client,
 		Database:    db,
