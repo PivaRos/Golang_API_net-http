@@ -5,14 +5,7 @@ import (
 	"go-api/src/utils"
 	"log"
 	"net/http"
-
-	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type AppData struct {
-	MongoClient *mongo.Client
-	Database    *mongo.Database
-}
 
 func main() {
 	//init the env variables
@@ -28,9 +21,10 @@ func main() {
 		log.Panicln(err)
 	}
 	log.Println("Connected to mongodb")
-	appData := &AppData{
+	appData := &utils.AppData{
 		MongoClient: client,
 		Database:    db,
+		Env:         env,
 	}
 
 	//create router

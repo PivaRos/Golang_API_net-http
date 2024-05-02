@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type env struct {
+type Env struct {
 	MONGO_URI                string
 	Jwt_Secret_Key           []byte
 	Access_Token_Expiration  time.Duration
@@ -20,9 +20,9 @@ type env struct {
 	PORT                     string
 }
 
-func InitEnv() (*env, error) {
+func InitEnv() (*Env, error) {
 
-	e := env{}
+	e := Env{}
 
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {

@@ -4,14 +4,21 @@ import (
 	"go-api/src/auth"
 	"go-api/src/care"
 	"go-api/src/middleware"
+	"go-api/src/role"
+	"go-api/src/utils"
 	"net/http"
 )
 
-func loadRoutes(router *http.ServeMux, appData *AppData) {
+func loadRoutes(router *http.ServeMux, appData *utils.AppData) {
 	authRouter := http.NewServeMux()
 	adminRouter := http.NewServeMux()
 	router.Handle("/auth/", http.StripPrefix("/auth", authRouter))
-	router.Handle("/admin/", http.StripPrefix("/admin", middleware.CheckAdmin(adminRouter)))
+
+	var adminAccess []role.Role = []role.Role{
+		role.Admin,
+	}
+
+	router.Handle("/admin/", http.StripPrefix("/admin", middleware.Authenticate(adminAccess, appData)(adminRouter)))
 
 	auth := auth.CreateHandler(appData.Database)
 	authRouter.HandleFunc("POST /Login", auth.Login)
