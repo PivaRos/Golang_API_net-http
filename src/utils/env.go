@@ -30,10 +30,11 @@ func InitEnv() (*Env, error) {
 	}
 	dir := filepath.Dir(filename)
 	envPath := filepath.Join(dir, "../../.env")
-
-	EnvErr := godotenv.Load(envPath)
-	if EnvErr != nil {
-		return nil, EnvErr
+	if os.Getenv("EnvFile") == "" {
+		EnvErr := godotenv.Load(envPath)
+		if EnvErr != nil {
+			return nil, EnvErr
+		}
 	}
 	e.MONGO_URI = os.Getenv("MONGO_URI")
 	if e.MONGO_URI == "" {
