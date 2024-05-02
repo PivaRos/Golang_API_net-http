@@ -17,7 +17,7 @@ COPY src/ ./src/
 
 # Build the Go app as a static binary.
 # Adjust the path to point to the directory containing your main package.
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o myapp ./src
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o clinic ./src
 
 # Start a new stage from scratch to keep the final image clean and small.
 FROM alpine:latest
@@ -28,7 +28,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 
 # Copy the pre-built binary file from the previous stage.
-COPY --from=builder /app/myapp .
+COPY --from=builder /app/clinic .
 
 # Command to run the executable.
-CMD ["./myapp"]
+CMD ["./clinic"]
