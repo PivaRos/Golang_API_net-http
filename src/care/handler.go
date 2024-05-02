@@ -13,9 +13,7 @@ type handler struct {
 
 func CreateHandler(db *mongo.Database) *handler {
 	return &handler{
-		s: &services{
-			db: db,
-		},
+		s: CreateServices(db),
 	}
 }
 
