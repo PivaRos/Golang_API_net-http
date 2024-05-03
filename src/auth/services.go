@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go-api/src/role"
 	"go-api/src/utils"
-	"log"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -32,7 +31,6 @@ func (s *services) Login(l Login) (*utils.Tokens, error) {
 	}
 	tokens, err := s.GenerateTokens(user.Id.Hex(), user.Role)
 	if err != nil {
-		log.Println("oops2")
 		return nil, err
 	}
 	return &tokens, nil
@@ -79,11 +77,9 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 
 	Id, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		log.Println("here1")
-		log.Println("userid", userID)
 		return tokens, err
 	}
-	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken}})
+	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
 	if err != nil {
 		return tokens, err
 	}
