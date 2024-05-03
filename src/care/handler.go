@@ -63,7 +63,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = care.ValidateCare()
+	err = care.Validate()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

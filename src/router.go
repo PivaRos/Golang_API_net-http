@@ -17,7 +17,6 @@ func loadRoutes(router *http.ServeMux, appData *utils.AppData) {
 	var adminAccess []role.Role = []role.Role{
 		role.Admin,
 	}
-
 	router.Handle("/admin/", http.StripPrefix("/admin", middleware.Authenticate(adminAccess, appData)(adminRouter)))
 
 	auth := auth.CreateHandler(appData)
@@ -28,5 +27,5 @@ func loadRoutes(router *http.ServeMux, appData *utils.AppData) {
 	adminRouter.HandleFunc("GET /Care/{id}", care.Get)
 	adminRouter.HandleFunc("POST /Care", care.Create)
 	adminRouter.HandleFunc("DELETE /Care/{id}", care.Delete)
-
+	
 }
