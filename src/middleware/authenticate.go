@@ -18,7 +18,7 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			token, err := jwt.ParseWithClaims(tokenString, &utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.ParseWithClaims(tokenString, &utils.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 				return app.Env.Jwt_Secret_Key, nil
 			})
 			if err != nil {
@@ -26,7 +26,7 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 				return
 			}
 
-			if claim, ok := token.Claims.(*utils.Claims); ok && token.Valid {
+			if claim, ok := token.Claims.(*utils.UserClaims); ok && token.Valid {
 				var found bool = false
 				for _, value := range roles {
 					if value == claim.Role {

@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
+	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -23,30 +25,58 @@ type services struct {
 	app *utils.AppData
 }
 
-func (s *services) Login(l Login) (*utils.Tokens, error) {
+func (s *services) SendOTP(l Login) (*string, error) {
 	var user user.User
 	collection := s.app.Database.Collection("Users")
 	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "govId": l.GovId}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
-	tokens, err := s.GenerateTokens(user.Id.Hex(), user.Role)
+	code := strconv.Itoa(rand.Intn(900000) + 100000)
+	code = "111111" //! only for development
+	err = s.SendSMS(l.Phone, "", "Your Verification code is: "+code)
 	if err != nil {
 		return nil, err
 	}
-	return &tokens, nil
+	authToken, err := s.GenerateAuthToken(user, code)
+	if err != nil {
+		return nil, err
+	}
+	return authToken, nil
 }
 
-func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens, error) {
+func (s *services) ValidateOTP(token string, code string) (*utils.Tokens, error) {
+
+	claims, err := utils.GetJwtClaims(token, string(s.app.Env.Jwt_Secret_Key))
+	if err != nil {
+		return nil, err
+	}
+	switch c := claims.(type) {
+	case utils.AuthClaims:
+		if c.Otp == code {
+			// Generate new access and refresh tokens
+			newTokens, err := s.GenerateUserTokens(c.UserId, c.Role)
+			if err != nil {
+				return nil, err
+			}
+			return &newTokens, nil
+		} else {
+			return nil, errors.New("otp is not matching")
+		}
+	}
+	return nil, errors.New("invalid Token")
+}
+
+func (s *services) GenerateUserTokens(userId string, role enums.Role) (utils.Tokens, error) {
 	var tokens utils.Tokens
 	// Set expiration times for each token
 	accessTokenExpTime := s.app.Env.Access_Token_Expiration
 	refreshTokenExpTime := s.app.Env.Refresh_Token_Expiration
 
 	// Generate Access Token
-	accessTokenClaims := &utils.Claims{
+	accessTokenClaims := &utils.UserClaims{
 		Role:   role,
-		UserID: userID,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(accessTokenExpTime).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -60,9 +90,10 @@ func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens,
 	tokens.AccessToken = accessToken
 
 	// Generate Refresh Token
-	refreshTokenClaims := &utils.Claims{
+	refreshTokenClaims := &utils.UserClaims{
+
 		Role:   role,
-		UserID: userID,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(refreshTokenExpTime).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -75,7 +106,7 @@ func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens,
 	}
 	tokens.RefreshToken = refreshToken
 
-	Id, err := primitive.ObjectIDFromHex(userID)
+	Id, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return tokens, err
 	}
@@ -88,29 +119,44 @@ func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens,
 	return tokens, nil
 }
 
-func (s *services) RefreshToken(oldRefreshToken string) (utils.Tokens, error) {
-	var tokens utils.Tokens
+func (s *services) GenerateAuthToken(user user.User, Otp string) (*string, error) {
+	accessTokenExpTime := s.app.Env.Access_Token_Expiration
 
-	token, err := jwt.ParseWithClaims(oldRefreshToken, utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return s.app.Env.Jwt_Secret_Key, nil
-	})
+	accessTokenClaims := &utils.AuthClaims{
+		Otp:    Otp,
+		UserId: user.Id.Hex(),
+		Role:   user.Role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(accessTokenExpTime).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+	}
+
+	authToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims).SignedString(s.app.Env.Jwt_Secret_Key)
 	if err != nil {
-		return tokens, err
+		return nil, err
 	}
+	return &authToken, nil
+}
 
-	claims, ok := token.Claims.(utils.Claims)
-	if !ok || !token.Valid {
-		return tokens, fmt.Errorf("invalid refresh token")
-	}
-	if claims.ExpiresAt < time.Now().Unix() {
-		return tokens, fmt.Errorf("expired refresh token")
-	}
-
-	// Generate new access and refresh tokens
-	newTokens, err := s.GenerateTokens(claims.UserID, claims.Role)
+func (s *services) RefreshToken(oldRefreshToken string) (*utils.Tokens, error) {
+	claims, err := utils.GetJwtClaims(oldRefreshToken, string(s.app.Env.Jwt_Secret_Key))
 	if err != nil {
-		return tokens, err
+		return nil, err
 	}
+	switch c := claims.(type) {
+	case utils.UserClaims:
+		// Generate new access and refresh tokens
+		newTokens, err := s.GenerateUserTokens(c.UserId, c.Role)
+		if err != nil {
+			return nil, err
+		}
 
-	return newTokens, nil
+		return &newTokens, nil
+	}
+	return nil, errors.New("invalid token")
+}
+
+func (s *services) SendSMS(phone string, title string, body string) error {
+	return nil
 }

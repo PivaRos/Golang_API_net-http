@@ -30,7 +30,7 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	tokens, err := h.s.Login(loginCredentials)
+	tokens, err := h.s.SendOTP(loginCredentials)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			http.Error(w, "User not found", http.StatusBadRequest)
