@@ -35,7 +35,6 @@ func (s *services) Login(l Login) (*utils.Tokens, error) {
 		return nil, err
 	}
 	return &tokens, nil
-
 }
 
 func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens, error) {
