@@ -101,10 +101,10 @@ func (s *services) RefreshToken(oldRefreshToken string, role enums.Role) (utils.
 
 	claims, ok := token.Claims.(utils.Claims)
 	if !ok || !token.Valid {
-		return tokens, fmt.Errorf("Invalid refresh token")
+		return tokens, fmt.Errorf("invalid refresh token")
 	}
 	if claims.ExpiresAt < time.Now().Unix() {
-		return tokens, fmt.Errorf("Expired refresh token")
+		return tokens, fmt.Errorf("expired refresh token")
 	}
 
 	// Generate new access and refresh tokens
