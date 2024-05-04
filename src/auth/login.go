@@ -8,8 +8,8 @@ import (
 )
 
 type Login struct {
-	Phone    string `json:"Phone"  validate:"required"`
-	Password string `json:"Password"  validate:"required"`
+	Phone string `json:"phone"  validate:"required"`
+	GovId string `json:"govId"  validate:"required"`
 }
 
 func (c *Login) ValidateLogin() error {

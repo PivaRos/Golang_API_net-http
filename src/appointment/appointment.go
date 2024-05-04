@@ -13,6 +13,7 @@ type Appointment struct {
 	Id         primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	CareId     primitive.ObjectID `bson:"careId" json:"careId"  validate:"required"`
 	CustomerId primitive.ObjectID `bson:"customerId" json:"customerId"  validate:"required"`
+	AdminId    primitive.ObjectID `bson:"adminId" json:"adminId"  validate:"required"`
 	Date       time.Time          `bson:"date" json:"date"  validate:"required"`
 }
 

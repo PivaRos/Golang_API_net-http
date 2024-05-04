@@ -3,7 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
-	"go-api/src/role"
+	"go-api/src/enums"
+	"go-api/src/user"
 	"go-api/src/utils"
 	"time"
 
@@ -23,9 +24,9 @@ type services struct {
 }
 
 func (s *services) Login(l Login) (*utils.Tokens, error) {
-	var user User
-	collection := s.app.Database.Collection("users")
-	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "password": l.Password}).Decode(&user)
+	var user user.User
+	collection := s.app.Database.Collection("Users")
+	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "govId": l.GovId}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func (s *services) Login(l Login) (*utils.Tokens, error) {
 
 }
 
-func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, error) {
+func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens, error) {
 	var tokens utils.Tokens
 	// Set expiration times for each token
 	accessTokenExpTime := s.app.Env.Access_Token_Expiration
@@ -79,7 +80,7 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 	if err != nil {
 		return tokens, err
 	}
-	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
+	result, err := s.app.Database.Collection("Users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
 	if err != nil {
 		return tokens, err
 	}
@@ -88,7 +89,7 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 	return tokens, nil
 }
 
-func (s *services) RefreshToken(oldRefreshToken string, role role.Role) (utils.Tokens, error) {
+func (s *services) RefreshToken(oldRefreshToken string, role enums.Role) (utils.Tokens, error) {
 	var tokens utils.Tokens
 
 	token, err := jwt.ParseWithClaims(oldRefreshToken, utils.Claims{}, func(token *jwt.Token) (interface{}, error) {

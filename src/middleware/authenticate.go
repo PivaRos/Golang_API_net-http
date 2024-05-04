@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"go-api/src/role"
+	"go-api/src/enums"
 	"go-api/src/utils"
 	"net/http"
 
@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func Authenticate(roles []role.Role, app *utils.AppData) func(http.Handler) http.Handler {
+func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tokenString := r.Header.Get("Authorization")
@@ -35,7 +35,7 @@ func Authenticate(roles []role.Role, app *utils.AppData) func(http.Handler) http
 				}
 				if found {
 					filter := bson.M{"accessToken": tokenString}
-					result := app.MongoClient.Database(app.Env.Db).Collection("users").FindOne(context.TODO(), filter)
+					result := app.MongoClient.Database(app.Env.Db).Collection("Users").FindOne(context.TODO(), filter)
 					if result.Err() != nil {
 						w.WriteHeader(http.StatusUnauthorized)
 						return

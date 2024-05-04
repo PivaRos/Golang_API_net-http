@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"go-api/src/role"
+	"go-api/src/enums"
 
 	"github.com/dgrijalva/jwt-go"
 )
 
 type Claims struct {
 	UserID string `json:"user_id"`
-	Role   role.Role
+	Role   enums.Role
 	jwt.StandardClaims
 }
 
