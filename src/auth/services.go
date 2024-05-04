@@ -89,7 +89,7 @@ func (s *services) GenerateTokens(userID string, role enums.Role) (utils.Tokens,
 	return tokens, nil
 }
 
-func (s *services) RefreshToken(oldRefreshToken string, role enums.Role) (utils.Tokens, error) {
+func (s *services) RefreshToken(oldRefreshToken string) (utils.Tokens, error) {
 	var tokens utils.Tokens
 
 	token, err := jwt.ParseWithClaims(oldRefreshToken, utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
