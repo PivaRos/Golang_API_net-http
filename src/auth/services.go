@@ -6,6 +6,7 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
+	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -155,6 +156,19 @@ func (s *services) RefreshToken(oldRefreshToken string) (*utils.Tokens, error) {
 		return &newTokens, nil
 	}
 	return nil, errors.New("invalid token")
+}
+
+func (s *services) InvalidateToken(token string) error {
+	tokensCollection := s.app.Database.Collection("tokens")
+	filter := bson.M{"token": token}
+	result, err := tokensCollection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 0 {
+		return errors.New("no documents found")
+	}
+	return nil
 }
 
 func (s *services) SendSMS(phone string, title string, body string) error {
