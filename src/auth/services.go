@@ -6,7 +6,6 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
-	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -34,7 +33,9 @@ func (s *services) SendOTP(l Login) (*string, error) {
 		return nil, err
 	}
 	code := strconv.Itoa(rand.Intn(900000) + 100000)
-	code = "111111" //! only for development
+	if s.app.Env.ENVIRONMENT == "Development" {
+		code = "111111" //! only for development
+	}
 	err = s.SendSMS(l.Phone, "", "Your Verification code is: "+code)
 	if err != nil {
 		return nil, err

@@ -18,6 +18,7 @@ type Env struct {
 	Refresh_Token_Expiration time.Duration
 	Db                       string
 	PORT                     string
+	ENVIRONMENT              string
 }
 
 func InitEnv() (*Env, error) {
@@ -62,6 +63,10 @@ func InitEnv() (*Env, error) {
 	e.PORT = os.Getenv("PORT")
 	if e.PORT == "" {
 		return nil, errors.New("no PORT was found in env file")
+	}
+	e.ENVIRONMENT = os.Getenv("ENVIRONMENT")
+	if e.PORT == "" {
+		return nil, errors.New("no ENVIRONMENT was found in env file")
 	}
 
 	return &e, nil
