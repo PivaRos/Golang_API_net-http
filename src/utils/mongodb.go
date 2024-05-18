@@ -14,11 +14,11 @@ func SetupMongoDB(uri string, db string) (*mongo.Client, *mongo.Database, contex
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, cancel, err
 	}
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, cancel, err
 	}
 	database := client.Database(db)
 
