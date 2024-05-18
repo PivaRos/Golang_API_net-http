@@ -26,17 +26,39 @@ type Tokens struct {
 	RefreshToken string
 }
 
-func GetJwtClaims(token string, Jwt_Secret_Key string) (interface{}, error) {
-	parsedToken, err := jwt.ParseWithClaims(token, jwt.StandardClaims{}, func(parsedToken *jwt.Token) (interface{}, error) {
-		return Jwt_Secret_Key, nil
+func GetUserClaims(token string, secretKey []byte) (*UserClaims, error) {
+	claims := &UserClaims{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(parsedToken *jwt.Token) (interface{}, error) {
+		return secretKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := parsedToken.Claims.(UserClaims)
-	if !ok || !parsedToken.Valid {
+
+	if !parsedToken.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
+
+	if claims.ExpiresAt < time.Now().Unix() {
+		return nil, fmt.Errorf("expired token")
+	}
+
+	return claims, nil
+}
+
+func GetAuthClaims(token string, secretKey []byte) (*AuthClaims, error) {
+	claims := &AuthClaims{}
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(parsedToken *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !parsedToken.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
 	if claims.ExpiresAt < time.Now().Unix() {
 		return nil, fmt.Errorf("expired token")
 	}

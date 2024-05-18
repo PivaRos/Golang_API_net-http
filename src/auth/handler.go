@@ -58,6 +58,7 @@ func (h *handler) ValidateOTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	tokenRaw, err := json.Marshal(tokens)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -6,6 +6,7 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
+	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -48,25 +49,23 @@ func (s *services) SendOTP(l Login) (*string, error) {
 }
 
 func (s *services) ValidateOTP(token string, code string) (*utils.Tokens, error) {
-
-	claims, err := utils.GetJwtClaims(token, string(s.app.Env.Jwt_Secret_Key))
+	log.Println("jere-1")
+	log.Println("token is : " + token)
+	claims, err := utils.GetAuthClaims(token, s.app.Env.Jwt_Secret_Key)
 	if err != nil {
 		return nil, err
 	}
-	switch c := claims.(type) {
-	case utils.AuthClaims:
-		if c.Otp == code {
-			// Generate new access and refresh tokens
-			newTokens, err := s.GenerateUserTokens(c.UserId, c.Role)
-			if err != nil {
-				return nil, err
-			}
-			return &newTokens, nil
-		} else {
-			return nil, errors.New("otp is not matching")
+	log.Println(claims.Otp)
+	log.Println(code)
+	if claims.Otp == code {
+		// Generate new access and refresh tokens
+		newTokens, err := s.GenerateUserTokens(claims.UserId, claims.Role)
+		if err != nil {
+			return nil, err
 		}
+		return &newTokens, nil
 	}
-	return nil, errors.New("invalid Token")
+	return nil, errors.New("otp is not matching")
 }
 
 func (s *services) GenerateUserTokens(userId string, role enums.Role) (utils.Tokens, error) {
@@ -142,21 +141,19 @@ func (s *services) GenerateAuthToken(user user.User, Otp string) (*string, error
 }
 
 func (s *services) RefreshToken(oldRefreshToken string) (*utils.Tokens, error) {
-	claims, err := utils.GetJwtClaims(oldRefreshToken, string(s.app.Env.Jwt_Secret_Key))
+	claims, err := utils.GetUserClaims(oldRefreshToken, s.app.Env.Jwt_Secret_Key)
 	if err != nil {
 		return nil, err
 	}
-	switch c := claims.(type) {
-	case utils.UserClaims:
-		// Generate new access and refresh tokens
-		newTokens, err := s.GenerateUserTokens(c.UserId, c.Role)
-		if err != nil {
-			return nil, err
-		}
 
-		return &newTokens, nil
+	// Generate new access and refresh tokens
+	newTokens, err := s.GenerateUserTokens(claims.UserId, claims.Role)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("invalid token")
+
+	return &newTokens, nil
+
 }
 
 func (s *services) InvalidateToken(token string) error {
