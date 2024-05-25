@@ -6,7 +6,6 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
-	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -49,14 +48,10 @@ func (s *services) SendOTP(l Login) (*string, error) {
 }
 
 func (s *services) ValidateOTP(token string, code string) (*utils.Tokens, error) {
-	log.Println("jere-1")
-	log.Println("token is : " + token)
 	claims, err := utils.GetAuthClaims(token, s.app.Env.Jwt_Secret_Key)
 	if err != nil {
 		return nil, err
 	}
-	log.Println(claims.Otp)
-	log.Println(code)
 	if claims.Otp == code {
 		// Generate new access and refresh tokens
 		newTokens, err := s.GenerateUserTokens(claims.UserId, claims.Role)
