@@ -41,6 +41,8 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 						return
 					}
 
+					ctx := context.WithValue(r.Context(), utils.RoleContextKey, claim.Role)
+					r = r.WithContext(ctx)
 					next.ServeHTTP(w, r)
 					return
 				}

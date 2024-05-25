@@ -26,7 +26,8 @@ func main() {
 	log.Println("Connected to mongodb")
 	//setup redis connection
 	rdb := redis.NewClient(&redis.Options{
-		Addr: env.Redis_Addr,
+		Addr:     env.Redis_Addr,
+		Password: env.Redis_Password,
 		OnConnect: func(ctx context.Context, cn *redis.Conn) error {
 			log.Println("Connected to redis")
 			return nil
