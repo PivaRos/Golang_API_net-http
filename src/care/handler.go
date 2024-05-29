@@ -25,7 +25,7 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 		care, err := h.s.GetById(id)
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No document found with the given ID", http.StatusNotFound)
+				http.Error(w, "No document found with the given id", http.StatusNotFound)
 				return
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -77,7 +77,6 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-
 }
 
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
