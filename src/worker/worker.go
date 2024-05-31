@@ -1,16 +1,15 @@
 package worker
 
 import (
-	"go-api/src/enums"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type WorkHour struct {
-	DayOfWeek enums.DayOfWeek `bson:"dayOfWeek" json:"dayOfWeek"`
-	StartTime time.Time       `bson:"startTime" json:"startTime"`
-	EndTime   time.Time       `bson:"endTime" json:"endTime"`
+	WeekDay   time.Weekday `bson:"weekDay" json:"weekDay"`
+	StartTime time.Time    `bson:"startTime" json:"startTime"`
+	EndTime   time.Time    `bson:"endTime" json:"endTime"`
 }
 
 type Worker struct {

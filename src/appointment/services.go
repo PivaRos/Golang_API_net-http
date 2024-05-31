@@ -2,6 +2,7 @@ package appointment
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
@@ -120,4 +121,43 @@ func (s *services) GetAll() (*[]Appointment, error) {
 		return nil, err
 	}
 	return &appointments, nil
+}
+
+func (s *services) GetAppointmentsByWorkersAndDate(date time.Time, arr []primitive.ObjectID) ([]Appointment, error) {
+	var conditionsArray []bson.M
+	for i := 0; i < len(arr); i++ {
+		conditionsArray = append(conditionsArray, bson.M{
+			"workerId": arr[i],
+		})
+	}
+
+	appointmentsCollection := s.db.Collection("appointments")
+
+	// Create date range for the entire day
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	filter := bson.M{
+		"$and": []bson.M{
+			{"$or": conditionsArray},
+			{
+				"startTime": bson.M{
+					"$gte": startOfDay,
+					"$lt":  endOfDay,
+				},
+			},
+		},
+	}
+
+	cursor, err := appointmentsCollection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var appointments []Appointment
+	err = cursor.All(context.TODO(), &appointments)
+	if err != nil {
+		return nil, err
+	}
+	return appointments, nil
 }

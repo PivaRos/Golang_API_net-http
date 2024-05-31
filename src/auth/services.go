@@ -27,7 +27,7 @@ type services struct {
 
 func (s *services) SendOTP(l Login) (*string, error) {
 	var user user.User
-	collection := s.app.Database.Collection("Users")
+	collection := s.app.Database.Collection("users")
 	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "govId": l.GovId}).Decode(&user)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (s *services) GenerateUserTokens(userId string, role enums.Role) (utils.Tok
 	if err != nil {
 		return tokens, err
 	}
-	result, err := s.app.Database.Collection("Users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
+	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
 	if err != nil {
 		return tokens, err
 	}

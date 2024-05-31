@@ -14,7 +14,7 @@ type Appointment struct {
 	Id         primitive.ObjectID      `bson:"_id,omitempty" json:"id,omitempty"`
 	CareId     primitive.ObjectID      `bson:"careId" json:"careId"  validate:"required"`
 	CustomerId primitive.ObjectID      `bson:"customerId" json:"customerId"  validate:"required"`
-	AdminId    primitive.ObjectID      `bson:"adminId" json:"adminId"  validate:"required"`
+	WorkerId   primitive.ObjectID      `bson:"workerId" json:"workerId"  validate:"required"`
 	StartTime  time.Time               `bson:"startTime" json:"startTime"  validate:"required"`
 	EndTime    time.Time               `bson:"endTime" json:"endTime"  validate:"required"`
 	Status     enums.AppointmentStatus `bson:"status" json:"status"  validate:"required"`

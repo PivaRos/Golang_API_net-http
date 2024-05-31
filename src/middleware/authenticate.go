@@ -36,7 +36,7 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 				}
 				if found {
 					filter := bson.M{"accessToken": tokenString}
-					result := app.MongoClient.Database(app.Env.Db).Collection("Users").FindOne(context.TODO(), filter)
+					result := app.MongoClient.Database(app.Env.Db).Collection("users").FindOne(context.TODO(), filter)
 					if result.Err() != nil {
 						w.WriteHeader(http.StatusUnauthorized)
 						return
