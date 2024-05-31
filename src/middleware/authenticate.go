@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"go-api/src/enums"
+	"go-api/src/user"
 	"go-api/src/utils"
 	"net/http"
 
@@ -40,8 +41,10 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 						w.WriteHeader(http.StatusUnauthorized)
 						return
 					}
+					var user user.User
+					result.Decode(user)
 
-					ctx := context.WithValue(r.Context(), utils.RoleContextKey, claim.Role)
+					ctx := context.WithValue(r.Context(), utils.UserDataContextKey, user)
 					r = r.WithContext(ctx)
 					next.ServeHTTP(w, r)
 					return
