@@ -92,6 +92,11 @@ func (h *handler) GetAvailableTime(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	//check if the date did not pass already
+	if date.Before(time.Now()) {
+		http.Error(w, "date is passed", http.StatusInternalServerError)
+		return
+	}
 	workerCollection := h.s.db.Collection("workers")
 	careObjectId, err := primitive.ObjectIDFromHex(careId)
 	if err != nil {
