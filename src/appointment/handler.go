@@ -2,14 +2,15 @@ package appointment
 
 import (
 	"encoding/json"
+	"go-api/src/care"
+	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
-	"go-api/src/worker"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -97,56 +98,93 @@ func (h *handler) GetAvailableTime(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "date is passed", http.StatusInternalServerError)
 		return
 	}
-	workerCollection := h.s.db.Collection("workers")
-	careObjectId, err := primitive.ObjectIDFromHex(careId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	cursor, err := workerCollection.Find(r.Context(), bson.M{"certifiedCares": careObjectId})
+	availableHours, err := h.s.GetAvailableTimes(careId, date)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			http.Error(w, "No workers is certified to do this care", http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
-	var workers []worker.Worker
-	err = cursor.All(r.Context(), &workers)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var objectIds []primitive.ObjectID
-	for _, worker := range workers {
-		objectIds = append(objectIds, worker.ObjectID)
-	}
-	appointments, err := h.s.GetAppointmentsByWorkersAndDate(date, objectIds)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// get the raw available times
-	availableHoursMap := make(map[string][]utils.Times)
-	for _, w := range workers {
-		for _, hours := range w.WorkHours {
-			if hours.WeekDay == date.Weekday() {
-				availableHoursMap[w.Hex()] = append(availableHoursMap[w.Hex()], utils.Times{StartTime: hours.StartTime, EndTime: hours.EndTime})
-			}
-		}
-	}
-	//update the raw available times
 
-	for _, appointment := range appointments {
-		availableHoursMap[string(appointment.WorkerId.Hex())] = utils.SubtractTimes(availableHoursMap[appointment.WorkerId.Hex()], utils.Times{StartTime: appointment.StartTime, EndTime: appointment.EndTime})
-	}
-	bytes, err := json.Marshal(availableHoursMap)
+	bytes, err := json.Marshal(availableHours)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(bytes)
+}
+
+func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
+
+	var appointment StampAppointment
+	err := json.NewDecoder(r.Body).Decode(&appointment)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = appointment.Validate()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Println("here")
+	user, ok := r.Context().Value(utils.UserDataContextKey).(user.User)
+	if !ok {
+		http.Error(w, "UserId not found", http.StatusInternalServerError)
+		return
+	}
+	// validate that the times are actually available
+	availableTimes, err := h.s.GetAvailableTimes(appointment.CareId.Hex(), appointment.StartTime)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	log.Println("here5")
+	careServices := care.CreateServices(h.s.db)
+	log.Println(appointment.CareId.Hex())
+	Care, err := careServices.GetById(appointment.CareId.Hex())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("here6")
+
+	var selectedWorkerId string
+	for key, times := range *availableTimes {
+
+		for _, time := range times {
+			if time.EndTime.Before(time.StartTime.Add(Care.Duration)) || time.EndTime.Equal(time.StartTime.Add(Care.Duration)) {
+				//then this is available time
+				selectedWorkerId = key
+			}
+		}
+	}
+	selectedWorkerObjectId, err := primitive.ObjectIDFromHex(selectedWorkerId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	createAppointment := Appointment{
+		CareId:     appointment.CareId,
+		CustomerId: user.Id,
+		WorkerId:   selectedWorkerObjectId,
+		StartTime:  appointment.StartTime,
+		EndTime:    appointment.StartTime.Add(Care.Duration),
+		Status:     enums.Pending,
+	}
+	err = h.s.Create(createAppointment)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }

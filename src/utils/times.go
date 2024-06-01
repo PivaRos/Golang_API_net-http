@@ -3,8 +3,8 @@ package utils
 import "time"
 
 type Times struct {
-	StartTime time.Time `bson:"startTime" json:"startTime"`
-	EndTime   time.Time `bson:"endTime" json:"endTime"`
+	StartTime time.Time `bson:"startTime" json:"startTime" validate:"required"`
+	EndTime   time.Time `bson:"endTime" json:"endTime" validate:"required"`
 }
 
 // extractTime extracts the hour and minute from a time.Time object
@@ -41,6 +41,5 @@ func SubtractTimes(times []Times, sub Times) []Times {
 			}
 		}
 	}
-
 	return result
 }

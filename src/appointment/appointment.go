@@ -37,3 +37,26 @@ func (a *Appointment) Validate() error {
 	}
 	return nil
 }
+
+type StampAppointment struct {
+	StartTime time.Time          `json:"startTime" validate:"required"`
+	CareId    primitive.ObjectID `json:"careId" validate:"required"`
+}
+
+func (a *StampAppointment) Validate() error {
+	validate := validator.New()
+	// Validate the struct
+	err := validate.Struct(a)
+	if err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			return errors.New("validation failed")
+		}
+
+		var validationErrors []string
+		for _, err := range err.(validator.ValidationErrors) {
+			validationErrors = append(validationErrors, err.Field(), err.Tag())
+		}
+		return errors.New("validation errors: " + strings.Join(validationErrors, ", "))
+	}
+	return nil
+}

@@ -2,6 +2,10 @@ package appointment
 
 import (
 	"context"
+	"errors"
+	"go-api/src/utils"
+	"go-api/src/worker"
+	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -160,4 +164,64 @@ func (s *services) GetAppointmentsByWorkersAndDate(date time.Time, arr []primiti
 		return nil, err
 	}
 	return appointments, nil
+}
+func (s *services) GetAvailableTimes(careId string, date time.Time) (*map[string][]utils.Times, error) {
+	workerCollection := s.db.Collection("workers")
+	careObjectId, err := primitive.ObjectIDFromHex(careId)
+	if err != nil {
+		return nil, err
+	}
+	cursor, err := workerCollection.Find(context.TODO(), bson.M{"certifiedCares": careObjectId})
+	if err != nil {
+		return nil, err
+	}
+	log.Println("here1")
+	var workers []worker.Worker
+	err = cursor.All(context.TODO(), &workers)
+	if err != nil {
+		return nil, err
+	}
+	var objectIds []primitive.ObjectID
+	for _, worker := range workers {
+		objectIds = append(objectIds, worker.ObjectID)
+	}
+	if len(objectIds) == 0 {
+		return nil, errors.New("no workers found")
+	}
+	appointments, err := s.GetAppointmentsByWorkersAndDate(date, objectIds)
+	if err != nil {
+		return nil, err
+	}
+	// get the raw available times
+	log.Println("here3")
+
+	availableHoursMap := make(map[string][]utils.Times)
+	for _, w := range workers {
+		for _, hours := range w.WorkHours {
+			if hours.WeekDay == date.Weekday() {
+				availableHoursMap[w.Hex()] = append(availableHoursMap[w.Hex()], utils.Times{StartTime: hours.StartTime, EndTime: hours.EndTime})
+			}
+		}
+	}
+	log.Println("here4")
+
+	//update the raw available times
+	for _, appointment := range appointments {
+		availableHoursMap[string(appointment.WorkerId.Hex())] = utils.SubtractTimes(availableHoursMap[appointment.WorkerId.Hex()], utils.Times{StartTime: appointment.StartTime, EndTime: appointment.EndTime})
+	}
+	return &availableHoursMap, nil
+}
+
+func (s *services) Create(appointment Appointment) error {
+	appointmentsCollection := s.db.Collection("appointments")
+	res, err := appointmentsCollection.InsertOne(context.TODO(), appointment)
+	if err != nil {
+		return err
+	}
+	if _, ok := res.InsertedID.(primitive.ObjectID); ok {
+		return nil
+	} else {
+		return errors.New("unable to complete action")
+	}
+
 }

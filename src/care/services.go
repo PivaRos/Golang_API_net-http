@@ -33,7 +33,13 @@ func (s *services) GetById(id string) (*Care, error) {
 	// Find the document using the filter
 	err = CaresDb.FindOne(context.TODO(), filter).Decode(&care)
 	if err != nil {
-		return nil, err
+		if err == mongo.ErrNoDocuments {
+
+			return nil, errors.New("no care found with this id")
+		} else {
+
+			return nil, err
+		}
 	}
 
 	return &care, nil
