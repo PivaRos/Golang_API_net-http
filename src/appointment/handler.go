@@ -131,7 +131,6 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println("here")
 	user, ok := r.Context().Value(utils.UserDataContextKey).(user.User)
 	if !ok {
 		http.Error(w, "UserId not found", http.StatusInternalServerError)
@@ -148,7 +147,6 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	log.Println("here5")
 	careServices := care.CreateServices(h.s.db)
 	log.Println(appointment.CareId.Hex())
 	Care, err := careServices.GetById(appointment.CareId.Hex())
@@ -156,17 +154,18 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("here6")
 
 	var selectedWorkerId string
 	for key, times := range *availableTimes {
-
 		for _, time := range times {
-			if time.EndTime.Before(time.StartTime.Add(Care.Duration)) || time.EndTime.Equal(time.StartTime.Add(Care.Duration)) {
-				//then this is available time
+			if time.StartTime.Before(appointment.StartTime) || time.StartTime.Equal(appointment.StartTime) && (time.EndTime.After(appointment.StartTime.Add(Care.Duration)) || time.EndTime.Equal(appointment.StartTime.Add(Care.Duration))) {
 				selectedWorkerId = key
 			}
 		}
+	}
+	if selectedWorkerId == "" {
+		http.Error(w, "unable to find worker to append this appointment to", http.StatusInternalServerError)
+		return
 	}
 	selectedWorkerObjectId, err := primitive.ObjectIDFromHex(selectedWorkerId)
 	if err != nil {

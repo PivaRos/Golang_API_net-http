@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go-api/src/utils"
 	"go-api/src/worker"
-	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -175,7 +174,6 @@ func (s *services) GetAvailableTimes(careId string, date time.Time) (*map[string
 	if err != nil {
 		return nil, err
 	}
-	log.Println("here1")
 	var workers []worker.Worker
 	err = cursor.All(context.TODO(), &workers)
 	if err != nil {
@@ -193,7 +191,6 @@ func (s *services) GetAvailableTimes(careId string, date time.Time) (*map[string
 		return nil, err
 	}
 	// get the raw available times
-	log.Println("here3")
 
 	availableHoursMap := make(map[string][]utils.Times)
 	for _, w := range workers {
@@ -203,7 +200,6 @@ func (s *services) GetAvailableTimes(careId string, date time.Time) (*map[string
 			}
 		}
 	}
-	log.Println("here4")
 
 	//update the raw available times
 	for _, appointment := range appointments {
