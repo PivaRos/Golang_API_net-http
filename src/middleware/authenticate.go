@@ -2,9 +2,11 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
+	"log"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -36,13 +38,19 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 				}
 				if found {
 					filter := bson.M{"accessToken": tokenString}
-					result := app.MongoClient.Database(app.Env.Db).Collection("users").FindOne(context.TODO(), filter)
-					if result.Err() != nil {
-						w.WriteHeader(http.StatusUnauthorized)
+					var user user.User
+					err := app.MongoClient.Database(app.Env.Db).Collection("users").FindOne(context.TODO(), filter).Decode(&user)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
-					var user user.User
-					result.Decode(user)
+					bytes, _ := json.Marshal(user)
+					log.Println("user1", string(bytes))
+					err = user.Validate()
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
 
 					ctx := context.WithValue(r.Context(), utils.UserDataContextKey, user)
 					r = r.WithContext(ctx)

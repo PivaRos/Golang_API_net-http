@@ -133,7 +133,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	user, ok := r.Context().Value(utils.UserDataContextKey).(user.User)
 	if !ok {
-		http.Error(w, "UserId not found", http.StatusInternalServerError)
+		http.Error(w, "User not found", http.StatusInternalServerError)
 		return
 	}
 	// validate that the times are actually available
@@ -148,7 +148,6 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	careServices := care.CreateServices(h.s.db)
-	log.Println(appointment.CareId.Hex())
 	Care, err := careServices.GetById(appointment.CareId.Hex())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -156,15 +155,20 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var selectedWorkerId string
+	log.Println("availableTimes before", availableTimes)
+	*availableTimes = utils.AdjustDates(availableTimes, appointment.StartTime)
+	log.Println("availableTimes after", availableTimes)
 	for key, times := range *availableTimes {
 		for _, time := range times {
+
 			if time.StartTime.Before(appointment.StartTime) || time.StartTime.Equal(appointment.StartTime) && (time.EndTime.After(appointment.StartTime.Add(Care.Duration)) || time.EndTime.Equal(appointment.StartTime.Add(Care.Duration))) {
 				selectedWorkerId = key
+				log.Println(time)
 			}
 		}
 	}
 	if selectedWorkerId == "" {
-		http.Error(w, "unable to find worker to append this appointment to", http.StatusInternalServerError)
+		http.Error(w, "there is no available worker for this job", http.StatusInternalServerError)
 		return
 	}
 	selectedWorkerObjectId, err := primitive.ObjectIDFromHex(selectedWorkerId)
@@ -172,6 +176,8 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	bytes, err := json.Marshal(user)
+	log.Println("user", string(bytes))
 	createAppointment := Appointment{
 		CareId:     appointment.CareId,
 		CustomerId: user.Id,
