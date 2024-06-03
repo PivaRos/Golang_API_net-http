@@ -1,6 +1,8 @@
 package utils
 
-import "time"
+import (
+	"time"
+)
 
 type Times struct {
 	StartTime time.Time `bson:"startTime" json:"startTime" validate:"required"`
@@ -61,4 +63,17 @@ func SubtractTimes(times []Times, sub Times) []Times {
 		}
 	}
 	return result
+}
+
+func CheckIfTimeCanBeMounted(timesMap *map[string][]Times, time time.Time, duration time.Duration) *[]string {
+	var arrayWorkers []string
+	for key, times := range *timesMap {
+		for _, timeObject := range times {
+			if (timeObject.StartTime.Before(time) || timeObject.StartTime.Equal(time)) && (timeObject.EndTime.After(time.Add(duration)) || timeObject.EndTime.Equal(time.Add(duration))) {
+				arrayWorkers = append(arrayWorkers, key)
+				break
+			}
+		}
+	}
+	return &arrayWorkers
 }

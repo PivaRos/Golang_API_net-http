@@ -6,7 +6,6 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
-	"log"
 	"net/http"
 	"time"
 
@@ -155,20 +154,13 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var selectedWorkerId string
-	log.Println("availableTimes before", availableTimes)
 	*availableTimes = utils.AdjustDates(availableTimes, appointment.StartTime)
-	log.Println("availableTimes after", availableTimes)
-	for key, times := range *availableTimes {
-		for _, time := range times {
-
-			if time.StartTime.Before(appointment.StartTime) || time.StartTime.Equal(appointment.StartTime) && (time.EndTime.After(appointment.StartTime.Add(Care.Duration)) || time.EndTime.Equal(appointment.StartTime.Add(Care.Duration))) {
-				selectedWorkerId = key
-				log.Println(time)
-			}
-		}
+	array := *utils.CheckIfTimeCanBeMounted(availableTimes, appointment.StartTime, Care.Duration)
+	if len(array) > 0 {
+		selectedWorkerId = array[0]
 	}
 	if selectedWorkerId == "" {
-		http.Error(w, "there is no available worker for this job", http.StatusInternalServerError)
+		http.Error(w, "there is no available worker for this job", http.StatusNotFound)
 		return
 	}
 	selectedWorkerObjectId, err := primitive.ObjectIDFromHex(selectedWorkerId)
@@ -176,8 +168,6 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	bytes, err := json.Marshal(user)
-	log.Println("user", string(bytes))
 	createAppointment := Appointment{
 		CareId:     appointment.CareId,
 		CustomerId: user.Id,

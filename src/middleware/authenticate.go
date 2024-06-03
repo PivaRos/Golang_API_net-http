@@ -2,11 +2,9 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
-	"log"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -44,8 +42,6 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
-					bytes, _ := json.Marshal(user)
-					log.Println("user1", string(bytes))
 					err = user.Validate()
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
