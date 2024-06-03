@@ -221,3 +221,36 @@ func (s *services) Create(appointment Appointment) error {
 	}
 
 }
+
+func (s *services) Update(appointmentId primitive.ObjectID, updateData Appointment) error {
+	appointmentsCollection := s.db.Collection("appointments")
+
+	// Create the update document
+	update := bson.M{
+		"$set": bson.M{
+			"careId":     updateData.CareId,
+			"customerId": updateData.CustomerId,
+			"workerId":   updateData.WorkerId,
+			"startTime":  updateData.StartTime,
+			"endTime":    updateData.EndTime,
+			"status":     updateData.Status,
+		},
+	}
+
+	// Find the appointment by ID and update it
+	filter := bson.M{"_id": appointmentId}
+	res, err := appointmentsCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	if res.MatchedCount == 0 {
+		return errors.New("appointment not found")
+	}
+
+	if res.ModifiedCount == 0 {
+		return errors.New("no changes made to the appointment")
+	}
+
+	return nil
+}
