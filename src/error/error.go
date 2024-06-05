@@ -14,6 +14,6 @@ func CreateInternalError(code int, Err error) Error {
 	}
 }
 
-func (e *Error) HandleResponse(r http.ResponseWriter) {
-
+func (e *Error) HandleResponse(w http.ResponseWriter) {
+	http.Error(w, e.Err.Error(), e.code)
 }
