@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
-	"fmt"
-	"go-api/src/role"
+	"errors"
+	"go-api/src/enums"
+	"go-api/src/user"
 	"go-api/src/utils"
-	"log"
+	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -23,32 +25,54 @@ type services struct {
 	app *utils.AppData
 }
 
-func (s *services) Login(l Login) (*utils.Tokens, error) {
-	var user User
+func (s *services) SendOTP(l Login) (*string, error) {
+	var user user.User
 	collection := s.app.Database.Collection("users")
-	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "password": l.Password}).Decode(&user)
+	err := collection.FindOne(context.TODO(), bson.M{"phone": l.Phone, "govId": l.GovId}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
-	tokens, err := s.GenerateTokens(user.Id.Hex(), user.Role)
+	code := strconv.Itoa(rand.Intn(900000) + 100000)
+	if s.app.Env.ENVIRONMENT == "Development" {
+		code = "111111" //! only for development
+	}
+	err = s.SendSMS(l.Phone, "", "Your Verification code is: "+code)
 	if err != nil {
-		log.Println("oops2")
 		return nil, err
 	}
-	return &tokens, nil
-
+	authToken, err := s.GenerateAuthToken(user, code)
+	if err != nil {
+		return nil, err
+	}
+	return authToken, nil
 }
 
-func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, error) {
+func (s *services) ValidateOTP(token string, code string) (*utils.Tokens, error) {
+	claims, err := utils.GetAuthClaims(token, s.app.Env.Jwt_Secret_Key)
+	if err != nil {
+		return nil, err
+	}
+	if claims.Otp == code {
+		// Generate new access and refresh tokens
+		newTokens, err := s.GenerateUserTokens(claims.UserId, claims.Role)
+		if err != nil {
+			return nil, err
+		}
+		return &newTokens, nil
+	}
+	return nil, errors.New("otp is not matching")
+}
+
+func (s *services) GenerateUserTokens(userId string, role enums.Role) (utils.Tokens, error) {
 	var tokens utils.Tokens
 	// Set expiration times for each token
 	accessTokenExpTime := s.app.Env.Access_Token_Expiration
 	refreshTokenExpTime := s.app.Env.Refresh_Token_Expiration
 
 	// Generate Access Token
-	accessTokenClaims := &utils.Claims{
+	accessTokenClaims := &utils.UserClaims{
 		Role:   role,
-		UserID: userID,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(accessTokenExpTime).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -62,9 +86,10 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 	tokens.AccessToken = accessToken
 
 	// Generate Refresh Token
-	refreshTokenClaims := &utils.Claims{
+	refreshTokenClaims := &utils.UserClaims{
+
 		Role:   role,
-		UserID: userID,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(refreshTokenExpTime).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -77,13 +102,11 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 	}
 	tokens.RefreshToken = refreshToken
 
-	Id, err := primitive.ObjectIDFromHex(userID)
+	Id, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		log.Println("here1")
-		log.Println("userid", userID)
 		return tokens, err
 	}
-	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken}})
+	result, err := s.app.Database.Collection("users").UpdateByID(context.TODO(), Id, bson.M{"$set": bson.M{"accessToken": tokens.AccessToken, "refreshToken": tokens.RefreshToken}})
 	if err != nil {
 		return tokens, err
 	}
@@ -92,29 +115,55 @@ func (s *services) GenerateTokens(userID string, role role.Role) (utils.Tokens, 
 	return tokens, nil
 }
 
-func (s *services) RefreshToken(oldRefreshToken string, role role.Role) (utils.Tokens, error) {
-	var tokens utils.Tokens
+func (s *services) GenerateAuthToken(user user.User, Otp string) (*string, error) {
+	accessTokenExpTime := s.app.Env.Access_Token_Expiration
 
-	token, err := jwt.ParseWithClaims(oldRefreshToken, utils.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return s.app.Env.Jwt_Secret_Key, nil
-	})
+	accessTokenClaims := &utils.AuthClaims{
+		Otp:    Otp,
+		UserId: user.Id.Hex(),
+		Role:   user.Role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(accessTokenExpTime).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+	}
+
+	authToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims).SignedString(s.app.Env.Jwt_Secret_Key)
 	if err != nil {
-		return tokens, err
+		return nil, err
 	}
+	return &authToken, nil
+}
 
-	claims, ok := token.Claims.(utils.Claims)
-	if !ok || !token.Valid {
-		return tokens, fmt.Errorf("Invalid refresh token")
-	}
-	if claims.ExpiresAt < time.Now().Unix() {
-		return tokens, fmt.Errorf("Expired refresh token")
+func (s *services) RefreshToken(oldRefreshToken string) (*utils.Tokens, error) {
+	claims, err := utils.GetUserClaims(oldRefreshToken, s.app.Env.Jwt_Secret_Key)
+	if err != nil {
+		return nil, err
 	}
 
 	// Generate new access and refresh tokens
-	newTokens, err := s.GenerateTokens(claims.UserID, claims.Role)
+	newTokens, err := s.GenerateUserTokens(claims.UserId, claims.Role)
 	if err != nil {
-		return tokens, err
+		return nil, err
 	}
 
-	return newTokens, nil
+	return &newTokens, nil
+
+}
+
+func (s *services) InvalidateToken(token string) error {
+	tokensCollection := s.app.Database.Collection("tokens")
+	filter := bson.M{"token": token}
+	result, err := tokensCollection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 0 {
+		return errors.New("no documents found")
+	}
+	return nil
+}
+
+func (s *services) SendSMS(phone string, title string, body string) error {
+	return nil
 }

@@ -21,7 +21,7 @@ type services struct {
 
 func (s *services) GetById(id string) (*Care, error) {
 	var care Care
-	CaresDb := s.db.Collection("Cares")
+	CaresDb := s.db.Collection("cares")
 
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -33,14 +33,20 @@ func (s *services) GetById(id string) (*Care, error) {
 	// Find the document using the filter
 	err = CaresDb.FindOne(context.TODO(), filter).Decode(&care)
 	if err != nil {
-		return nil, err
+		if err == mongo.ErrNoDocuments {
+
+			return nil, errors.New("no care found with this id")
+		} else {
+
+			return nil, err
+		}
 	}
 
 	return &care, nil
 }
 
 func (s *services) GetAll() (*[]Care, error) {
-	Cares := s.db.Collection("Cares")
+	Cares := s.db.Collection("cares")
 
 	cursor, err := Cares.Find(context.TODO(), bson.D{})
 	if err != nil {
@@ -55,7 +61,7 @@ func (s *services) GetAll() (*[]Care, error) {
 }
 
 func (s *services) Create(care Care) error {
-	Cares := s.db.Collection("Cares")
+	Cares := s.db.Collection("cares")
 
 	res, err := Cares.InsertOne(context.TODO(), care)
 	if err != nil {
@@ -69,7 +75,7 @@ func (s *services) Create(care Care) error {
 }
 
 func (s *services) Delete(id string) error {
-	Cares := s.db.Collection("Cares")
+	Cares := s.db.Collection("cares")
 
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

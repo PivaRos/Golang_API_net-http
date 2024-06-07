@@ -16,7 +16,8 @@ type Care struct {
 	Duration    time.Duration      `bson:"duration" json:"duration" validate:"required,gt=0"`
 }
 
-func (c *Care) ValidateCare() error {
+func (c *Care) Validate() error {
+
 	validate := validator.New()
 
 	// Validate the struct
