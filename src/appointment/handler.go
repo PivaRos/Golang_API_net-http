@@ -32,17 +32,12 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	appointments, err := h.s.GetAllByCustomerId(user.Id.Hex())
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, "No documents found with the given id", http.StatusNotFound)
-			return
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		utils.HandleError(w, err)
+		return
 	}
 	bytes, err := json.Marshal(appointments)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -57,20 +52,14 @@ func (h *handler) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	if id != "" {
-
 		appointment, err := h.s.GetByDocumentIdAndCustomerId(id, user.Id.Hex())
 		if err != nil {
-			if err == mongo.ErrNoDocuments {
-				http.Error(w, "No document found with the given id", http.StatusNotFound)
-				return
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			utils.HandleError(w, err)
+			return
 		}
 		bytes, err := json.Marshal(appointment)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.HandleError(w, err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -89,7 +78,7 @@ func (h *handler) GetAvailableTime(w http.ResponseWriter, r *http.Request) {
 	dateString := query.Get("date")
 	date, err := time.Parse("2006-01-02", dateString)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	//check if the date did not pass already
@@ -99,18 +88,13 @@ func (h *handler) GetAvailableTime(w http.ResponseWriter, r *http.Request) {
 	}
 	availableHours, err := h.s.GetAvailableTimes(careId, date)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		utils.HandleError(w, err)
+		return
 	}
 
 	bytes, err := json.Marshal(availableHours)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -122,12 +106,12 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	var appointment StampAppointment
 	err := json.NewDecoder(r.Body).Decode(&appointment)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HandleError(w, err)
 		return
 	}
 	err = appointment.Validate()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HandleError(w, err)
 		return
 	}
 	user, ok := r.Context().Value(utils.UserDataContextKey).(user.User)
@@ -138,18 +122,13 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	// validate that the times are actually available
 	availableTimes, err := h.s.GetAvailableTimes(appointment.CareId.Hex(), appointment.StartTime)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		utils.HandleError(w, err)
+		return
 	}
 	careServices := care.CreateServices(h.s.db)
 	Care, err := careServices.GetById(appointment.CareId.Hex())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 
@@ -165,7 +144,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	selectedWorkerObjectId, err := primitive.ObjectIDFromHex(selectedWorkerId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	createAppointment := Appointment{

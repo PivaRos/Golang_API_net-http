@@ -2,6 +2,7 @@ package care
 
 import (
 	"encoding/json"
+	"go-api/src/utils"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -73,7 +74,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	err = h.s.Create(care)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)

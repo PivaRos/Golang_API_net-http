@@ -36,12 +36,12 @@ func (h *handler) SendOTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "User not found", http.StatusBadRequest)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	tokenRaw, err := json.Marshal(token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -62,7 +62,7 @@ func (h *handler) ValidateOTP(w http.ResponseWriter, r *http.Request) {
 
 	tokenRaw, err := json.Marshal(tokens)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.HandleError(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
