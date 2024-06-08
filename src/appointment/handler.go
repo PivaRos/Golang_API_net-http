@@ -100,6 +100,43 @@ func (h *handler) GetAvailableTime(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
+func (h *handler) AdminGet(w http.ResponseWriter, r *http.Request) {
+	appointments, err := h.s.GetAll()
+	if err != nil {
+		utils.HandleError(w, err)
+		return
+	}
+	bytes, err := json.Marshal(appointments)
+	if err != nil {
+		utils.HandleError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
+}
+
+func (h *handler) AdminGetById(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id != "" {
+		appointment, err := h.s.GetByDocumentId(id)
+		if err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+		bytes, err := json.Marshal(appointment)
+		if err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bytes)
+		return
+	} else {
+		http.Error(w, "Invalid appointment id", http.StatusBadRequest)
+		return
+	}
+}
+
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var appointment StampAppointment

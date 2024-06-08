@@ -72,7 +72,6 @@ func (s services) GetByDocumentIdAndWorkerId(documentId string, customerId strin
 	}
 	return &appointment, nil
 }
-
 func (s *services) GetAllByWorkerId(id string) (*[]Appointment, error) {
 	AppointmentsDb := s.db.Collection("appointments")
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -122,7 +121,6 @@ func (s *services) GetAll() (*[]Appointment, error) {
 	}
 	return &appointments, nil
 }
-
 func (s *services) GetAppointmentsByWorkersAndDate(date time.Time, arr []primitive.ObjectID) ([]Appointment, error) {
 	var conditionsArray []bson.M
 	for i := 0; i < len(arr); i++ {
@@ -204,7 +202,6 @@ func (s *services) GetAvailableTimes(careId string, date time.Time) (*map[string
 	}
 	return &availableHoursMap, nil
 }
-
 func (s *services) Create(appointment Appointment) error {
 	appointmentsCollection := s.db.Collection("appointments")
 	res, err := appointmentsCollection.InsertOne(context.TODO(), appointment)
@@ -216,9 +213,7 @@ func (s *services) Create(appointment Appointment) error {
 	} else {
 		return errors.New("unable to complete action")
 	}
-
 }
-
 func (s *services) Update(appointmentId primitive.ObjectID, updateData Appointment) error {
 	appointmentsCollection := s.db.Collection("appointments")
 
