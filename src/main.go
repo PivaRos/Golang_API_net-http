@@ -25,18 +25,21 @@ func main() {
 	}
 	log.Println("Connected to mongodb")
 	//setup redis connection
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     env.Redis_Addr,
-		Password: env.Redis_Password,
-		OnConnect: func(ctx context.Context, cn *redis.Conn) error {
-			log.Println("Connected to redis")
-			return nil
-		},
-		DB: 0,
-	})
-	rError := utils.CheckRedisConnection(context.TODO(), rdb)
-	if rError != nil {
-		log.Panicln(err)
+	var rdb *redis.Client
+	if env.Redis_Addr != "" {
+		rdb := redis.NewClient(&redis.Options{
+			Addr:     env.Redis_Addr,
+			Password: env.Redis_Password,
+			OnConnect: func(ctx context.Context, cn *redis.Conn) error {
+				log.Println("Connected to redis")
+				return nil
+			},
+			DB: 0,
+		})
+		rError := utils.CheckRedisConnection(context.TODO(), rdb)
+		if rError != nil {
+			log.Panicln(err)
+		}
 	}
 	appData := &utils.AppData{
 		MongoClient: client,

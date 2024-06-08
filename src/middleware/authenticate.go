@@ -5,6 +5,7 @@ import (
 	"go-api/src/enums"
 	"go-api/src/user"
 	"go-api/src/utils"
+	"log"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
@@ -39,12 +40,13 @@ func Authenticate(roles []enums.Role, app *utils.AppData) func(http.Handler) htt
 					var user user.User
 					err := app.MongoClient.Database(app.Env.Db).Collection("users").FindOne(context.TODO(), filter).Decode(&user)
 					if err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
+						utils.HandleError(w, err)
 						return
 					}
 					err = user.Validate()
+					log.Println("user", user)
 					if err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
+						utils.HandleError(w, err)
 						return
 					}
 
