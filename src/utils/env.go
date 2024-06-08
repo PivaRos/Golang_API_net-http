@@ -19,8 +19,6 @@ type Env struct {
 	Db                       string
 	PORT                     string
 	ENVIRONMENT              string
-	Redis_Addr               string
-	Redis_Password           string
 }
 
 func InitEnv() (*Env, error) {
@@ -70,7 +68,5 @@ func InitEnv() (*Env, error) {
 	if e.PORT == "" {
 		return nil, errors.New("no ENVIRONMENT was found in env file")
 	}
-	e.Redis_Password = os.Getenv("Redis_Password") // can be empty
-
 	return &e, nil
 }

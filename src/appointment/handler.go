@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -18,9 +17,9 @@ type handler struct {
 	s *services
 }
 
-func CreateHandler(db *mongo.Database, redis redis.Client) *handler {
+func CreateHandler(db *mongo.Database) *handler {
 	return &handler{
-		s: CreateServices(db, redis),
+		s: CreateServices(db),
 	}
 }
 
