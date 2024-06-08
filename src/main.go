@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"go-api/src/middleware"
 	"go-api/src/utils"
 	"log"
 	"net/http"
-
-	"github.com/go-redis/redis/v8"
 )
 
 func main() {
@@ -24,28 +21,11 @@ func main() {
 		log.Panicln(err)
 	}
 	log.Println("Connected to mongodb")
-	//setup redis connection
-	var rdb *redis.Client
-	if env.Redis_Addr != "" {
-		rdb := redis.NewClient(&redis.Options{
-			Addr:     env.Redis_Addr,
-			Password: env.Redis_Password,
-			OnConnect: func(ctx context.Context, cn *redis.Conn) error {
-				log.Println("Connected to redis")
-				return nil
-			},
-			DB: 0,
-		})
-		rError := utils.CheckRedisConnection(context.TODO(), rdb)
-		if rError != nil {
-			log.Panicln(err)
-		}
-	}
+
 	appData := &utils.AppData{
 		MongoClient: client,
 		Database:    db,
 		Env:         env,
-		RedisClient: rdb,
 	}
 
 	//create router

@@ -38,7 +38,7 @@ func loadRoutes(router *http.ServeMux, appData *utils.AppData) {
 		enums.Customer,
 	}
 	router.Handle("/appointment/", http.StripPrefix("/appointment", middleware.Authenticate(allAccess, appData)(appointmentRouter)))
-	appointment := appointment.CreateHandler(appData.Database, *appData.RedisClient)
+	appointment := appointment.CreateHandler(appData.Database)
 	appointmentRouter.HandleFunc("POST /a", appointment.Create)
 	appointmentRouter.HandleFunc("GET /", appointment.Get)
 	appointmentRouter.HandleFunc("GET /times", appointment.GetAvailableTime)

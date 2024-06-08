@@ -7,22 +7,19 @@ import (
 	"go-api/src/worker"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateServices(db *mongo.Database, redis redis.Client) *services {
+func CreateServices(db *mongo.Database) *services {
 	return &services{
-		db:    db,
-		redis: redis,
+		db: db,
 	}
 }
 
 type services struct {
-	db    *mongo.Database
-	redis redis.Client
+	db *mongo.Database
 }
 
 func (s services) GetByDocumentId(id string) (*Appointment, error) {
