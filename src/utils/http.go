@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator"
@@ -21,5 +22,6 @@ func HandleError(w http.ResponseWriter, err error) {
 	default:
 		errorCode = http.StatusInternalServerError
 	}
+	log.Println("error is :", err.Error())
 	http.Error(w, err.Error(), errorCode)
 }

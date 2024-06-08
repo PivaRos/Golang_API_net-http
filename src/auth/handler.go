@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"go-api/src/utils"
 	"net/http"
-
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func CreateHandler(app *utils.AppData) *handler {
@@ -22,20 +20,16 @@ func (h *handler) SendOTP(w http.ResponseWriter, r *http.Request) {
 	var loginCredentials Login
 	err := json.NewDecoder(r.Body).Decode(&loginCredentials)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HandleError(w, err)
 		return
 	}
 	err = loginCredentials.ValidateLogin()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HandleError(w, err)
 		return
 	}
 	token, err := h.s.SendOTP(loginCredentials)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			http.Error(w, "User not found", http.StatusBadRequest)
-			return
-		}
 		utils.HandleError(w, err)
 		return
 	}
@@ -56,7 +50,7 @@ func (h *handler) ValidateOTP(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("otp")
 	tokens, err := h.s.ValidateOTP(tokenString, code)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.HandleError(w, err)
 		return
 	}
 
